@@ -8,12 +8,15 @@ import threading
 import time
 import hashlib
 
+NUMBERS_FOR_CPU = 10000
+
 
 class Server:
     """
         build function of the Server class.
     """
     def __init__(self, port, num):
+        self.start = 0  # the start position
         self.found = False  # when false- the clients haven't found the string
         # creating the hash
         self.hash = hashlib.md5(num.encode())
@@ -68,9 +71,7 @@ class Server:
             print('received socket exception - ' + str(err))
         finally:
             if self.all_clients:
-                for i in range(3):
-                    client_socket = list(self.all_clients.values())[i]
-                    client_socket.close()
+                client_socket.close()
 
     def handle_client(self, client_address):
         """
@@ -83,11 +84,22 @@ class Server:
             while True:
                 print("listening to client:", client_address)
                 data = client_socket.recv(1024).decode()
-                if data == "start":
+                if self.found:
+                    print(self.found)
+                    client_socket.send("found".encode())
+                    break
+                elif data == "start":
                     client_socket.send("start".encode())
+                    # recieving the cpu
+                    cpu_num = int(client_socket.recv(1024).decode())
+                    print("CPU" + str(cpu_num))
+                    self.cpu[client_address] = cpu_num
                     # sending the hash to the client
                     client_socket.send(str(self.hash).encode())
-
+                    # sending the client where to start
+                    client_socket.send(str(self.start).encode())
+                    # print(self.cpu[client_address])
+                    self.start += cpu_num * NUMBERS_FOR_CPU  # updating the start position
                     # power = cpu_sum / self.cpu[ready_addr[i]]
                     # ready_socket[i].send(.encode())  # sending the range
                     #self.can_start[ready_addr[i]] = False
@@ -96,28 +108,23 @@ class Server:
                     print('the string is: ' + found)
                     # self.can_play[client_address] = True
                     self.found = True
+                    # sending to the clients to stop
+
                 elif data == "no":
                     #  closing current socket
                     client_socket.close()
 
                     # updating dictionaries
                     self.can_start[client_address] = False
-                elif data == "cpu":
-                    cpu_num = client_socket.recv(1024).decode()
-                    print("CPU" + cpu_num)
-                    self.cpu[client_address] = cpu_num
                 elif data == "exit":
                     #  closing current socket
                     client_socket.close()
                     # updating dictionaries
                     self.can_start[client_address] = False
-                elif self.found:
-                    client_socket.send("found".encode())
         except socket.error as err:
             print('received socket exception - ' + str(err))
         finally:
             client_socket.close()
-
 
     def check_4_ready(self):
         """
@@ -146,7 +153,8 @@ class Server:
                     for i in range(4):
                         ready_socket[i].send("start".encode())
                         ready_socket[i].send(str(self.hash).encode())
-
+                        ready_socket[i].send(self.start.encode())
+                        # self.start += self.cpu[ready_addr[i]]
                         # power = cpu_sum / self.cpu[ready_addr[i]]
                         # ready_socket[i].send(.encode())  # sending the range
                         self.can_start[ready_addr[i]] = False
@@ -155,7 +163,7 @@ class Server:
             print('received socket exception - ' + str(err))
         finally:
             if self.all_clients:
-                for i in range(3):
+                for i in range(len(self.all_clients)):
                     client_socket = list(self.all_clients.values())[i]
                     client_socket.close()
 
@@ -164,8 +172,8 @@ def main():
     """
         the main function of the server
     """
-    num = input("Enter 10 digit number: ")
-    my_server = Server(7000, num)
+    num = input("Enter 5 digit number: ")
+    my_server = Server(6000, num)
     my_server.wait_for_clients()
 
 
