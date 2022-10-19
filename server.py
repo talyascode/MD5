@@ -7,7 +7,6 @@ import socket
 import threading
 import time
 import hashlib
-
 NUMBERS_FOR_CPU = 10000
 
 
