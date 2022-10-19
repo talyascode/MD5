@@ -8,7 +8,6 @@ import hashlib
 import socket
 import threading
 import found
-
 CPU = os.cpu_count()
 NUMBERS_FOR_CPU = 10000
 
