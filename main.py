@@ -7,6 +7,7 @@ print(result.digest())
 result = result.digest()
 
 digit = 0
+
 for i in range(10000):
     digit = f'{i:03}'
     num = hashlib.md5(digit.encode())
