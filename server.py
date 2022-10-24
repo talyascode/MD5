@@ -42,7 +42,6 @@ class Server:
         CPU: the number of logic processors
         ('127.0.0.1', 49944): 3
         ('127.0.0.1', 49944): 8
-
         """
         self.all_clients = {}
         self.cpu = {}
@@ -110,11 +109,16 @@ class Server:
                     # sending to the clients to stop
 
                 elif data == "no":
-                    #  closing current socket
-                    client_socket.close()
-
-                    # updating dictionaries
-                    self.can_start[client_address] = False
+                    if self.found:  # the current client didn't find but another client did
+                        client_socket.send("no".encode())  # sending the client no- to stop searching
+                        #  closing current socket
+                        client_socket.close()
+                        # updating dictionaries
+                        self.can_start[client_address] = False
+                    else:  # the string wasnt find by anyone and the client should keep searching
+                        print("client continue")
+                        client_socket.send("yes".encode())  # sending the client yes- to keep searching
+                        client_socket.send(str(self.start).encode())  # sending the client where to start
                 elif data == "exit":
                     #  closing current socket
                     client_socket.close()
@@ -171,7 +175,7 @@ def main():
     """
         the main function of the server
     """
-    num = input("Enter 5 digit number: ")
+    num = input("Enter 6 digit number: ")
     my_server = Server(6000, num)
     my_server.wait_for_clients()
 
