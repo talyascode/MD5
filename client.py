@@ -1,13 +1,10 @@
-"""
-Author: Talya Gross
-MD5 CLIENT
-"""
-# import
-import os
-import hashlib
 import socket
 import threading
 import found
+import hashlib
+import os
+
+
 CPU = os.cpu_count()
 NUMBERS_FOR_CPU = 10000
 
@@ -21,6 +18,7 @@ class Client():
         self.msg = ""
         self.start = 0
         self.server_hash = ""
+        self.jobs = []
         # self.found = False
         print("connecting...")
         self.sock = socket.socket()
@@ -34,7 +32,7 @@ class Client():
              with the server after connecting.
         """
         try:
-            while True:
+            while True and not found.found:
                 start = input("enter yes to start, exit to quit ")
                 if start == "yes":
                     self.sock.send("start".encode())
@@ -48,20 +46,32 @@ class Client():
                         self.start = int(self.sock.recv(1024).decode())
                         print("CPU" + self.server_hash)
                         print(self.start)
-                        for i in range(CPU):
-                            start = str(self.start)
-                            t = threading.Thread(target=self.search, args=[start])
-                            t.start()
-                            self.start += NUMBERS_FOR_CPU
-                        while not found.found:  # while the string isnt found
-                            pass
-                        self.sock.send(self.msg.encode())
-                        if self.msg == "yes":  # if the string was found
-                            # found = True
-                            print('found the string:')
-                            print(self.digit)
-                            self.sock.send(self.digit.encode())
-                            break
+
+                        while True and not found.found:
+                            self.jobs = []
+                            self.open_threads()  # open threads
+                            # join- waiting for the threads to finish
+                            for job in self.jobs:
+                                job.join()
+                            # print("continue....")
+                            self.sock.send(self.msg.encode())
+                            if self.msg == "yes":  # if the string was found
+                                # found = True
+                                print('found the string:')
+                                print(self.digit)
+                                self.sock.send(self.digit.encode())
+                                break
+                            else:  # the string wasn't found
+                                msg1 = self.sock.recv(1024).decode()  # if the client should keep searching
+                                print(msg1)
+                                if msg1 == "yes":
+                                    self.start = int(self.sock.recv(1024).decode())  # receiving the start pos
+                                    print("start :" + str(self.start))
+                                    print("continue searching...")
+
+                                else:  # stop searching
+                                    found.found = True
+                                    print("stop")
                     if answer == "found":
                         print("the string was already found")
                         # close the socket
@@ -77,12 +87,21 @@ class Client():
         finally:
             self.sock.close()
 
+    def open_threads(self):
+        for i in range(CPU):
+            start = str(self.start)
+            t = threading.Thread(target=self.search, args=[start])
+            self.jobs.append(t) # adding the threads to a list
+            t.start()
+            self.start += NUMBERS_FOR_CPU
+
     def search(self, start):
         digit = 0
         start = int(start)
+        # while loop
         for i in range(start, NUMBERS_FOR_CPU + start):
             if not found.found:  # if the string wasnt found
-                digit = f'{i:05}'
+                digit = f'{i:06}'
                 num = hashlib.md5(digit.encode())
                 print(digit)
                 # printing the equivalent byte value.
@@ -118,4 +137,3 @@ def main():
 if __name__ == "__main__":
     # Call the main handler function
     main()
-
