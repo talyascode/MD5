@@ -7,7 +7,7 @@ import socket
 import threading
 import time
 import hashlib
-NUMBERS_FOR_CPU = 10000
+NUMBERS_FOR_CPU = 100000
 
 
 class Server:
@@ -47,8 +47,6 @@ class Server:
         self.cpu = {}
         self.ranges = {}
         self.can_start = {}
-        # t = threading.Thread(target=self.check_4_ready)
-        # t.start()
         print("looking for clients...")
 
     def wait_for_clients(self):
@@ -56,7 +54,7 @@ class Server:
             the function accepts new clients and calls the handle client in threading
         """
         try:
-            while True and not self.found:
+            while True:
                 client_socket, client_address = self.sock.accept()
                 self.all_clients[client_address] = client_socket
                 self.can_start[client_address] = False
@@ -68,8 +66,8 @@ class Server:
         except socket.error as err:
             print('received socket exception - ' + str(err))
         finally:
-            if self.all_clients:
-                client_socket.close()
+            #if self.all_clients:
+            client_socket.close()
 
     def handle_client(self, client_address):
         """
@@ -88,94 +86,41 @@ class Server:
                     break
                 elif data == "start":
                     client_socket.send("start".encode())
-                    # recieving the cpu
-                    cpu_num = int(client_socket.recv(1024).decode())
+                    cpu_num = int(client_socket.recv(1024).decode())  # receiving the cpu
                     print("CPU" + str(cpu_num))
                     self.cpu[client_address] = cpu_num
-                    # sending the hash to the client
-                    client_socket.send(str(self.hash).encode())
-                    # sending the client where to start
-                    client_socket.send(str(self.start).encode())
-                    # print(self.cpu[client_address])
+                    client_socket.send(str(self.hash).encode())  # sending the hash to the client
+                    client_socket.send(str(self.start).encode())  # sending the client where to start
                     self.start += cpu_num * NUMBERS_FOR_CPU  # updating the start position
-                    # power = cpu_sum / self.cpu[ready_addr[i]]
-                    # ready_socket[i].send(.encode())  # sending the range
-                    #self.can_start[ready_addr[i]] = False
                 if data == "yes":
                     found = client_socket.recv(1024).decode()
                     print('the string is: ' + found)
-                    # self.can_play[client_address] = True
                     self.found = True
-                    # sending to the clients to stop
+                    break
 
                 elif data == "no":
                     if self.found:  # the current client didn't find but another client did
                         client_socket.send("no".encode())  # sending the client no- to stop searching
-                        #  closing current socket
-                        client_socket.close()
-                        # updating dictionaries
-                        self.can_start[client_address] = False
-                    else:  # the string wasnt find by anyone and the client should keep searching
+                        client_socket.close()  # closing current socket
+                    else:  # the string wasn't find by anyone and the client should keep searching
                         print("client continue")
-                        client_socket.send("yes".encode())  # sending the client yes- to keep searching
-                        client_socket.send(str(self.start).encode())  # sending the client where to start
-                elif data == "exit":
-                    #  closing current socket
-                    client_socket.close()
-                    # updating dictionaries
-                    self.can_start[client_address] = False
+                        msg = "yes" + str(self.start)
+                        # sending the client where to start and to keep searching
+                        client_socket.send(msg.encode())
+                if data == "exit":
+                    # client_socket.close()  # closing current socket
+                    break
         except socket.error as err:
             print('received socket exception - ' + str(err))
         finally:
             client_socket.close()
-
-    def check_4_ready(self):
-        """
-            the function checks if there are 4 clients that are ready, according to the can start dictionary
-        """
-        try:
-            while True:
-                ready_socket = []
-                ready_addr = []
-                print(self.can_start)
-                """
-                addr1: value
-                addr2: value
-                addr3: value
-                for addr in dict:
-                    dict[addr] - false/true
-                """
-                cpu_sum = 0
-                for addr in self.can_start:
-                    if self.can_start[addr]:
-                        ready_socket.append(self.all_clients[addr])
-                        ready_addr.append(addr)
-                if len(ready_socket) == 4:
-                    #for j in self.cpu:
-                    #    cpu_sum += self.cpu[ready_addr[j]]
-                    for i in range(4):
-                        ready_socket[i].send("start".encode())
-                        ready_socket[i].send(str(self.hash).encode())
-                        ready_socket[i].send(self.start.encode())
-                        # self.start += self.cpu[ready_addr[i]]
-                        # power = cpu_sum / self.cpu[ready_addr[i]]
-                        # ready_socket[i].send(.encode())  # sending the range
-                        self.can_start[ready_addr[i]] = False
-                time.sleep(1)
-        except socket.error as err:
-            print('received socket exception - ' + str(err))
-        finally:
-            if self.all_clients:
-                for i in range(len(self.all_clients)):
-                    client_socket = list(self.all_clients.values())[i]
-                    client_socket.close()
 
 
 def main():
     """
         the main function of the server
     """
-    num = input("Enter 6 digit number: ")
+    num = input("Enter 7 digit number: ")
     my_server = Server(6000, num)
     my_server.wait_for_clients()
 
