@@ -6,7 +6,7 @@ import os
 
 
 CPU = os.cpu_count()
-NUMBERS_FOR_CPU = 10000
+NUMBERS_FOR_CPU = 100000
 
 
 class Client():
@@ -36,42 +36,31 @@ class Client():
                 start = input("enter yes to start, exit to quit ")
                 if start == "yes":
                     self.sock.send("start".encode())
-                    #print("the server is looking for more clients...")
                     answer = self.sock.recv(1024).decode()
                     if answer == "start":
-                        # sending the number of logic processors to the server
-                        #self.sock.send("cpu".encode())
-                        self.sock.send(str(CPU).encode())
-                        self.server_hash = self.sock.recv(1024).decode()
-                        self.start = int(self.sock.recv(1024).decode())
-                        print("CPU" + self.server_hash)
-                        print(self.start)
-
-                        while True and not found.found:
+                        self.sock.send(str(CPU).encode())  # sending the number of logic processors to the server
+                        self.server_hash = self.sock.recv(1024).decode()  # receiving the hash from the server
+                        self.start = int(self.sock.recv(1024).decode())  # receiving the start position from the server
+                        while not found.found:
                             self.jobs = []
                             self.open_threads()  # open threads
-                            # join- waiting for the threads to finish
-                            for job in self.jobs:
+                            for job in self.jobs:  # join- waiting for the threads to finish
                                 job.join()
-                            # print("continue....")
-                            self.sock.send(self.msg.encode())
+                            self.sock.send(self.msg.encode())  # sending yes--> the string was found. no --> keep searching
                             if self.msg == "yes":  # if the string was found
-                                # found = True
-                                print('found the string:')
-                                print(self.digit)
-                                self.sock.send(self.digit.encode())
+                                print('found the string:' + self.digit)
+                                self.sock.send(self.digit.encode())  # sending the result
                                 break
                             else:  # the string wasn't found
-                                msg1 = self.sock.recv(1024).decode()  # if the client should keep searching
-                                print(msg1)
-                                if msg1 == "yes":
-                                    self.start = int(self.sock.recv(1024).decode())  # receiving the start pos
+                                # msg1 = if the client should keep searching and where to start
+                                msg1 = self.sock.recv(1024).decode()
+                                if msg1[0:3] == "yes":
+                                    self.start = int(msg1[3:])
                                     print("start :" + str(self.start))
                                     print("continue searching...")
-
                                 else:  # stop searching
                                     found.found = True
-                                    print("stop")
+                                    print("the string was found by another client! stop searching")
                     if answer == "found":
                         print("the string was already found")
                         # close the socket
@@ -85,13 +74,14 @@ class Client():
         except socket.error as err:
             print('received socket exception - ' + str(err))
         finally:
+            print("closing the socket....")
             self.sock.close()
 
     def open_threads(self):
         for i in range(CPU):
             start = str(self.start)
             t = threading.Thread(target=self.search, args=[start])
-            self.jobs.append(t) # adding the threads to a list
+            self.jobs.append(t)  # adding the threads to a list
             t.start()
             self.start += NUMBERS_FOR_CPU
 
@@ -100,14 +90,10 @@ class Client():
         start = int(start)
         # while loop
         for i in range(start, NUMBERS_FOR_CPU + start):
-            if not found.found:  # if the string wasnt found
-                digit = f'{i:06}'
+            if not found.found:  # if the string wasn't found
+                digit = f'{i:07}'
                 num = hashlib.md5(digit.encode())
                 print(digit)
-                # printing the equivalent byte value.
-                # print("The byte equivalent of hash is : ", end="")
-                # print(num.digest())
-                # print(str(num.digest()) == self.server_hash)
                 if str(num.digest()) == self.server_hash:  # the string was found
                     self.msg = "yes"
                     self.digit = digit
@@ -115,7 +101,7 @@ class Client():
                     break
             else:
                 break
-        if not found.found: # if the string wasnt found
+        if not found.found:  # if the string wasn't found
             print('didnt find the string')
             self.msg = "no"
 
