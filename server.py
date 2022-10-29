@@ -5,9 +5,10 @@ MD5 SERVER
 # import
 import socket
 import threading
-import time
 import hashlib
-NUMBERS_FOR_CPU = 100000
+
+# constants
+NUMBERS_FOR_CPU = 1000000
 
 
 class Server:
@@ -30,23 +31,9 @@ class Server:
         ALL CLIENTS:
         ('127.0.0.1', 49944): socket
         ('127.0.0.1', 49942): socket
-        
-        CAN START:
-        ('127.0.0.1', 49944): True
-        ('127.0.0.1', 49942): False
-        
-        RANGES: the ranges to check the string
-        ('127.0.0.1', 49944): 1-2
-        ('127.0.0.1', 49944): 6-7
-        
-        CPU: the number of logic processors
-        ('127.0.0.1', 49944): 3
-        ('127.0.0.1', 49944): 8
         """
         self.all_clients = {}
-        self.cpu = {}
-        self.ranges = {}
-        self.can_start = {}
+
         print("looking for clients...")
 
     def wait_for_clients(self):
@@ -57,7 +44,6 @@ class Server:
             while True:
                 client_socket, client_address = self.sock.accept()
                 self.all_clients[client_address] = client_socket
-                self.can_start[client_address] = False
                 print("all clients:")
                 print(self.all_clients)
                 t = threading.Thread(target=self.handle_client, args=[client_address])
@@ -66,8 +52,8 @@ class Server:
         except socket.error as err:
             print('received socket exception - ' + str(err))
         finally:
-            #if self.all_clients:
-            client_socket.close()
+            if self.all_clients:
+                client_socket.close()
 
     def handle_client(self, client_address):
         """
@@ -81,14 +67,13 @@ class Server:
                 print("listening to client:", client_address)
                 data = client_socket.recv(1024).decode()
                 if self.found:
-                    print(self.found)
+                    # print(self.found)
                     client_socket.send("found".encode())
                     break
                 elif data == "start":
                     client_socket.send("start".encode())
                     cpu_num = int(client_socket.recv(1024).decode())  # receiving the cpu
                     print("CPU" + str(cpu_num))
-                    self.cpu[client_address] = cpu_num
                     client_socket.send(str(self.hash).encode())  # sending the hash to the client
                     client_socket.send(str(self.start).encode())  # sending the client where to start
                     self.start += cpu_num * NUMBERS_FOR_CPU  # updating the start position
@@ -108,7 +93,6 @@ class Server:
                         # sending the client where to start and to keep searching
                         client_socket.send(msg.encode())
                 if data == "exit":
-                    # client_socket.close()  # closing current socket
                     break
         except socket.error as err:
             print('received socket exception - ' + str(err))
@@ -120,7 +104,7 @@ def main():
     """
         the main function of the server
     """
-    num = input("Enter 7 digit number: ")
+    num = input("Enter 10 digit number: ")
     my_server = Server(6000, num)
     my_server.wait_for_clients()
 
