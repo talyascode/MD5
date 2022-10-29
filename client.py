@@ -1,3 +1,7 @@
+"""
+Author: Talya Gross
+MD5 Client
+"""
 # import
 import socket
 import threading
@@ -6,7 +10,7 @@ import os
 
 # constants
 CPU = os.cpu_count()
-NUMBERS_FOR_CPU = 10000000
+NUMBERS_FOR_CPU = 1000000
 
 
 class Client:
@@ -50,7 +54,7 @@ class Client:
                             self.sock.send(self.msg.encode())
                             if self.msg == "yes":  # if the string was found
                                 print('found the string:' + self.digit)
-                                self.sock.send(self.digit.encode())  # sending the result
+                                self.sock.send(str(self.digit).encode())  # sending the result
                                 break
                             else:  # the string wasn't found
                                 # msg1 = if the client should keep searching and where to start
@@ -94,7 +98,6 @@ class Client:
         searching for the string using the hash
         :param start: where to start the search
         """
-        digit = 0
         start = int(start)
         for i in range(start, NUMBERS_FOR_CPU + start):
             if not self.found:  # if the string wasn't found
