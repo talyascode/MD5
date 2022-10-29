@@ -1,15 +1,15 @@
+# import
 import socket
 import threading
-import found
 import hashlib
 import os
 
-
+# constants
 CPU = os.cpu_count()
-NUMBERS_FOR_CPU = 100000
+NUMBERS_FOR_CPU = 10000000
 
 
-class Client():
+class Client:
     """
         build function of the Client class.
     """
@@ -19,7 +19,7 @@ class Client():
         self.start = 0
         self.server_hash = ""
         self.jobs = []
-        # self.found = False
+        self.found = False  # if the string was found
         print("connecting...")
         self.sock = socket.socket()
         self.sock.connect((ip, port))
@@ -32,7 +32,7 @@ class Client():
              with the server after connecting.
         """
         try:
-            while True and not found.found:
+            while True and not self.found:
                 start = input("enter yes to start, exit to quit ")
                 if start == "yes":
                     self.sock.send("start".encode())
@@ -41,12 +41,13 @@ class Client():
                         self.sock.send(str(CPU).encode())  # sending the number of logic processors to the server
                         self.server_hash = self.sock.recv(1024).decode()  # receiving the hash from the server
                         self.start = int(self.sock.recv(1024).decode())  # receiving the start position from the server
-                        while not found.found:
+                        while not self.found:
                             self.jobs = []
                             self.open_threads()  # open threads
                             for job in self.jobs:  # join- waiting for the threads to finish
                                 job.join()
-                            self.sock.send(self.msg.encode())  # sending yes--> the string was found. no --> keep searching
+                            # sending yes--> the string was found. no --> keep searching
+                            self.sock.send(self.msg.encode())
                             if self.msg == "yes":  # if the string was found
                                 print('found the string:' + self.digit)
                                 self.sock.send(self.digit.encode())  # sending the result
@@ -59,7 +60,7 @@ class Client():
                                     print("start :" + str(self.start))
                                     print("continue searching...")
                                 else:  # stop searching
-                                    found.found = True
+                                    self.found = True
                                     print("the string was found by another client! stop searching")
                     if answer == "found":
                         print("the string was already found")
@@ -78,6 +79,9 @@ class Client():
             self.sock.close()
 
     def open_threads(self):
+        """
+        opens a thread for each logical processor
+        """
         for i in range(CPU):
             start = str(self.start)
             t = threading.Thread(target=self.search, args=[start])
@@ -86,22 +90,25 @@ class Client():
             self.start += NUMBERS_FOR_CPU
 
     def search(self, start):
+        """
+        searching for the string using the hash
+        :param start: where to start the search
+        """
         digit = 0
         start = int(start)
-        # while loop
         for i in range(start, NUMBERS_FOR_CPU + start):
-            if not found.found:  # if the string wasn't found
-                digit = f'{i:07}'
+            if not self.found:  # if the string wasn't found
+                digit = f'{i:010}'
                 num = hashlib.md5(digit.encode())
                 print(digit)
                 if str(num.digest()) == self.server_hash:  # the string was found
                     self.msg = "yes"
                     self.digit = digit
-                    found.found = True  # update the status of the string so the search will stop
+                    self.found = True  # update the status of the string so the search will stop
                     break
             else:
                 break
-        if not found.found:  # if the string wasn't found
+        if not self.found:  # if the string wasn't found
             print('didnt find the string')
             self.msg = "no"
 
