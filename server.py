@@ -89,6 +89,7 @@ class Server:
                         client_socket.close()  # closing current socket
                     else:  # the string wasn't find by anyone and the client should keep searching
                         print("client continue")
+                        self.start += cpu_num * NUMBERS_FOR_CPU  # updating the start position
                         msg = "yes" + str(self.start)
                         # sending the client where to start and to keep searching
                         client_socket.send(msg.encode())
