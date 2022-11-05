@@ -103,7 +103,7 @@ class Client:
             if not self.found:  # if the string wasn't found
                 digit = f'{i:010}'
                 num = hashlib.md5(digit.encode())
-                print(digit)
+                # print(digit)
                 if str(num.digest()) == self.server_hash:  # the string was found
                     self.msg = "yes"
                     self.digit = digit
